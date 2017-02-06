@@ -1,0 +1,14 @@
+{
+    "entries": [
+        {
+            "name": "accountList",
+            "invalidatingEvents": ["Logout", "AccountListChanged", "BalancesChanged"],
+            "refreshFunction": null
+        },
+        {
+            "name": "invalidationqueuePosition",
+            "invalidatingEvents": [],
+            "refreshFunction": null
+        }
+    ]
+}
