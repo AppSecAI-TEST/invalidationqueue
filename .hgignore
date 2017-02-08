@@ -1,0 +1,6 @@
+syntax: glob
+demowebapp/target
+demoaccounts/target
+democommon/target
+demomovemoney/target
+invalidationqueue/target

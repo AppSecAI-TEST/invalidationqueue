@@ -286,7 +286,6 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         if (cacheInvalidationQueue.eventCount() > placeInQueue) {
             // -- Get events --
             Set<CIE> newEvents = cacheInvalidationQueue.getNewerEvents(placeInQueue);
-            System.out.println("New events to process are " + newEvents + "."); // FIXNE: Remove, but only later after I learn.
             for (EntryMetadata<CIE> entryMetadata : entryMetadataMap.values()) {
                 // -- Clear affected entries --
                 Set<CIE> eventsThatWouldInvalidateThisEntry = new HashSet<>(entryMetadata.getInvalidators()); // copy it as we will modify
@@ -294,7 +293,6 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
                 if (! eventsThatWouldInvalidateThisEntry.isEmpty()) {
                     // -- go ahead and invalidate this one --
                     clearEntry(entryMetadata.getName());
-                    System.out.println("Clearing entry for " + entryMetadata.getName() + "."); // FIXME: Remove, but only later after I learn some
                 }
             }
             // -- Update place in queue --

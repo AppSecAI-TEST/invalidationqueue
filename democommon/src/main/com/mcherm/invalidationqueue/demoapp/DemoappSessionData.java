@@ -23,6 +23,15 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.concurrent.ThreadLocalRandom;
 
 
+// FIXME:
+// FIXME: Future Plans
+// FIXME:
+// FIXME: The games played here with ThreadLocal variables are a bit complex to expect every application
+// FIXME: that uses the library to do it. Perhaps instead we can create a parent class (part of the
+// FIXME: library) that has the threadlocal handling and gets subclassed by the application-specific
+// FIXME: class.
+// FIXME:
+
 /**
  * A sample implementation of the SessionData interface.
  * <p>

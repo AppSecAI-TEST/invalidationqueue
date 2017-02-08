@@ -24,6 +24,18 @@ import java.util.HashSet;
 import java.util.Set;
 
 
+// FIXME: Future Design Idea:
+// FIXME:
+// FIXME: Pack more interesting stuff into the cookie. Include in the cookie the position of each
+// FIXME: component so that the component won't have to store that in the ComponentCache. Also
+// FIXME: include a count of how many blocks have been removed from the queue, and go ahead
+// FIXME: and remove blocks when we get more than 1 of them. Blocks should probably be about
+// FIXME: 512 bytes long. If a component finds that data it needs to read has been deleted then
+// FIXME: it should assume that EVERY invalidation event there is has been generated.
+// FIXME:
+// FIXME: Also consider encrypting the cookie so it can't be modified.
+// FIXME:
+
 /**
  * This class implements a queue of cache invalidation events that occurred during the lifetime of
  * a user's session. In order to allow instances of the class to be easily injected into all of
