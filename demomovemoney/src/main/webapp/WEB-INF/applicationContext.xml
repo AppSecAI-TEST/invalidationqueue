@@ -19,7 +19,8 @@
 
     <bean name="storageMechanism" class="com.mcherm.invalidationqueue.demoapp.DemoappStorageMechanism"/>
 
-    <bean name="sessionData" class="com.mcherm.invalidationqueue.demoapp.DemoappSessionData"/>
+    <!--<bean name="sessionData" class="com.mcherm.invalidationqueue.demoapp.DemoappComplexSessionData"/>-->
+    <bean name="sessionData" class="com.mcherm.invalidationqueue.SimpleSessionData"/>
 
     <bean name="cacheInvalidationQueue" class="com.mcherm.invalidationqueue.demoapp.DemoappCacheInvalidationQueue"/>
 

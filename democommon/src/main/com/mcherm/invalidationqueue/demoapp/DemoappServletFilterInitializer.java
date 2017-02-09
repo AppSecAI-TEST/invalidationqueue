@@ -15,6 +15,7 @@ limitations under the License.
 */
 package com.mcherm.invalidationqueue.demoapp;
 
+import com.mcherm.invalidationqueue.SessionData;
 import com.mcherm.invalidationqueue.StatelessSessionBean;
 import com.mcherm.invalidationqueue.ServletFilterInitializer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,7 @@ import java.util.List;
  */
 public class DemoappServletFilterInitializer extends ServletFilterInitializer {
     @Autowired
-    DemoappSessionData sessionData;
+    SessionData sessionData;
 
     @Autowired
     DemoappCacheInvalidationQueue cacheInvalidationQueue;

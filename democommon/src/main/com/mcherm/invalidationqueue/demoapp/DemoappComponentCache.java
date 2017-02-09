@@ -16,18 +16,19 @@ limitations under the License.
 package com.mcherm.invalidationqueue.demoapp;
 
 import com.mcherm.invalidationqueue.ComponentCacheImpl;
+import com.mcherm.invalidationqueue.SessionData;
 
 
 /**
  * An implementation of ComponentCache for Demoapp.
  */
-public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvalidationEvent, DemoappSessionData> {
+public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvalidationEvent, SessionData> {
 
     /** Constructor. */
     public DemoappComponentCache(
             DemoappStorageMechanism storageMechanism,
             DemoappCacheInvalidationQueue cacheInvalidationQueue,
-            DemoappSessionData sessionData,
+            SessionData sessionData,
             String entriesFileName) {
         super(
                 storageMechanism,
