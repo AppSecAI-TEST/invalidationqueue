@@ -2,11 +2,13 @@
     "entries": [
         {
             "name": "accountList",
+            "type": "com.mcherm.invalidationqueue.demoapp.components.accounts.AccountList",
             "invalidatingEvents": ["Logout", "AccountListChanged", "BalancesChanged"],
             "refreshFunction": null
         },
         {
             "name": "invalidationqueuePosition",
+            "type": "java.lang.String",
             "invalidatingEvents": [],
             "refreshFunction": null
         }

@@ -23,8 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.List;
-
 
 /**
  * The Spring component that serves up the call to get the list of accounts
@@ -43,21 +41,14 @@ public class AccountsComponent {
 
 
     @RequestMapping(value = "v1/accounts", method = RequestMethod.GET)
-    public @ResponseBody AccountList getAccounts() throws  Throwable {
-        final AccountList accountList;
-        String accountListJSON = componentCache.getEntry("accountList");
-        if (accountListJSON == null) {
-            // The value was not in cache, so load it
-            List<Account> accounts = accountsBackEndService.getAccounts();
-            accountList = new AccountList(accounts);
-            // Now we have a new value, so serialize it and store in cache
-            String newAccountListJSON = objectMapper.writeValueAsString(accountList);
-            componentCache.storeEntry("accountList", newAccountListJSON);
+    public @ResponseBody AccountList getAccounts2() throws  Throwable {
+        AccountList cachedResult = componentCache.getEntry("accountList");
+        if (cachedResult == null) {
+            AccountList result = new AccountList(accountsBackEndService.getAccounts());
+            componentCache.storeEntry("accountList", result);
+            return result;
         } else {
-            // The value was in cache, so just deserialize it
-            accountList = objectMapper.readValue(accountListJSON, AccountList.class);
+            return cachedResult;
         }
-        return accountList;
     }
-
 }

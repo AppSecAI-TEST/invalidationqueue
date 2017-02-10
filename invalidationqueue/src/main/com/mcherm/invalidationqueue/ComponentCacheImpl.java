@@ -15,6 +15,8 @@ limitations under the License.
 */
 package com.mcherm.invalidationqueue;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,6 +48,7 @@ import java.util.concurrent.Callable;
 public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends SessionData> implements ComponentCache<CIE>, StatelessSessionBean {
     private final String ENTRIES_JSON_FIELD_NAME = "entries";
     private final String NAME_JSON_FIELD_NAME = "name";
+    private final String TYPE_JSON_FIELD_NAME = "type";
     private final String EVENTS_JSON_FIELD_NAME = "invalidatingEvents";
     private final String REFRESH_FUNCTION_JSON_FIELD_NAME = "refreshFunction";
 
@@ -54,18 +57,20 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
 
     /**
      * An immutable data object containing the metadata about a single entry in the component
-     * cache. It contains things like the field's name, the list of events that would render
+     * cache. It contains things like the field's name, type, the list of events that would render
      * the current value invalid, and (optionally), the function to call to obtain an up-to-date
      * value for the field.
      */
     protected static class EntryMetadata<CIE2 extends CacheInvalidationEvent> {
         private final String name;
+        private final Class type;
         private final Set<CIE2> invalidators;
         private final Callable<String> refreshFunction;
 
         /** Constructor. */
-        public EntryMetadata(String name, Set<CIE2> invalidators, Callable<String> refreshFunction) {
+        public EntryMetadata(String name, Class type, Set<CIE2> invalidators, Callable<String> refreshFunction) {
             this.name = name;
+            this.type = type;
             this.invalidators = Collections.unmodifiableSet(invalidators);
             this.refreshFunction = refreshFunction;
         }
@@ -75,6 +80,11 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
          */
         public String getName() {
             return name;
+        }
+
+        // FIXME: Do for real and doc it if it works
+        public Class getType() {
+            return type;
         }
 
         /**
@@ -95,6 +105,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
     }
 
 
+    private final ObjectMapper objectMapper;
     private final StorageMechanism storageMechanism;
     private final SD sessionData;
     private final CacheInvalidationQueue<CIE> cacheInvalidationQueue;
@@ -116,12 +127,14 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
      * @param enumClass the actual class for the enum
      */
     public ComponentCacheImpl(
+            ObjectMapper objectMapper,
             StorageMechanism storageMechanism,
             SD sessionData,
             CacheInvalidationQueue<CIE> cacheInvalidationQueue,
             InputStream entriesConfiguration,
             String entriesFileName,
             Class<CIE> enumClass) {
+        this.objectMapper = objectMapper;
         this.storageMechanism = storageMechanism;
         this.sessionData = sessionData;
         this.cacheInvalidationQueue = cacheInvalidationQueue;
@@ -175,6 +188,13 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
                 // -- read the JSON entry --
                 JSONObject entryJSON = entriesList.getJSONObject(i);
                 String name = entryJSON.getString(NAME_JSON_FIELD_NAME);
+                String typeString = entryJSON.getString(TYPE_JSON_FIELD_NAME);
+                Class type;
+                try {
+                    type = Class.forName(typeString);
+                } catch(ClassNotFoundException err) {
+                    throw new JSONException("Class \"" + typeString + "\" was not found.");
+                }
                 JSONArray invalidatingEvents = entryJSON.getJSONArray(EVENTS_JSON_FIELD_NAME);
                 String refreshFunctionBeanName;
                 if (!entriesJSON.has(REFRESH_FUNCTION_JSON_FIELD_NAME) || entriesJSON.isNull(REFRESH_FUNCTION_JSON_FIELD_NAME)) {
@@ -207,7 +227,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
 
                 // -- create metadata object --
                 EntryMetadata<CIE> entryMetadata =
-                        new EntryMetadata<>(name, invalidators, refreshFunction);
+                        new EntryMetadata<>(name, type, invalidators, refreshFunction);
                 result.add(entryMetadata);
             }
             return result;
@@ -230,8 +250,31 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
 
 
     @Override
-    public void storeEntry(String name, String value) {
-        storageMechanism.put(storageKeyFromName(name), value);
+    public void storeEntry(String name, Object value) {
+        // --- Check that name and value are valid ---
+        EntryMetadata<CIE> entryMetadata = entryMetadataMap.get(name);
+        if (entryMetadata == null) {
+            throw new IllegalArgumentException("The ComponentCache is not configured to support storing the field '" + name + "'.");
+        }
+        if (!entryMetadata.getType().equals(value.getClass())) {
+            throw new IllegalArgumentException("The value was of type \"" + value.getClass().getName() +
+                    "\", but the entry " + name + " is configured to expect values of type \"" +
+                    entryMetadata.getType().getName() + "\".");
+        }
+
+        // --- Store it as either String or Jackson-serialized object ---
+        String stringToStore;
+        if (value instanceof CharSequence) {
+            stringToStore = value.toString();
+        } else {
+            try {
+                stringToStore = objectMapper.writeValueAsString(value);
+            } catch (JsonProcessingException err) {
+                throw new RuntimeException("Object of type \"" + value.getClass().getName() +
+                        "\" could not be serialized to JSON by Jackson.");
+            }
+        }
+        storageMechanism.put(storageKeyFromName(name), stringToStore);
     }
 
     @Override
@@ -239,8 +282,11 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         storageMechanism.put(storageKeyFromName(name), null);
     }
 
-    @Override
-    public String getEntry(String name) {
+
+    /**
+     * Returns the underlying String for an entry, or null if none is available.
+     */
+    private String getEntryString(String name) {
         String result = storageMechanism.get(storageKeyFromName(name));
         if (result != null) {
             return result;
@@ -263,6 +309,24 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
             // Store this new value, then return it
             storeEntry(name, newValue);
             return newValue;
+        }
+    }
+
+
+    @Override
+    public <T> T getEntry(String name) {
+        String valueStr = getEntryString(name);
+        if (valueStr == null) {
+            return null;
+        } else {
+            try {
+                Class<T> clazz = entryMetadataMap.get(name).getType();
+                return objectMapper.readValue(valueStr, clazz);
+            } catch (ClassCastException err) {
+                throw new ClassCastException("Class cast while reading field " + name + ". " + err.getMessage());
+            } catch (IOException err) {
+                throw new RuntimeException("IOException reading from string; this shouldn't happen.");
+            }
         }
     }
 

@@ -15,6 +15,7 @@ limitations under the License.
 */
 package com.mcherm.invalidationqueue.demoapp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcherm.invalidationqueue.ComponentCacheImpl;
 import com.mcherm.invalidationqueue.SessionData;
 
@@ -26,11 +27,13 @@ public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvali
 
     /** Constructor. */
     public DemoappComponentCache(
+            ObjectMapper objectMapper,
             DemoappStorageMechanism storageMechanism,
             DemoappCacheInvalidationQueue cacheInvalidationQueue,
             SessionData sessionData,
             String entriesFileName) {
         super(
+                objectMapper,
                 storageMechanism,
                 sessionData,
                 cacheInvalidationQueue,

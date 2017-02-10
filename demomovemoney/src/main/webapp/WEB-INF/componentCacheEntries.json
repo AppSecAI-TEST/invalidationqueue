@@ -2,6 +2,7 @@
   "entries": [
     {
       "name": "invalidationqueuePosition",
+      "type": "java.lang.String",
       "invalidatingEvents": [],
       "refreshFunction": null
     }

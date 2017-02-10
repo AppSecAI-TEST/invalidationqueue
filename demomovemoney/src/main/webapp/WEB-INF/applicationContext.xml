@@ -25,6 +25,7 @@
     <bean name="cacheInvalidationQueue" class="com.mcherm.invalidationqueue.demoapp.DemoappCacheInvalidationQueue"/>
 
     <bean name="componentCache" class="com.mcherm.invalidationqueue.demoapp.DemoappComponentCache">
+        <constructor-arg ref="objectMapper"/>
         <constructor-arg ref="storageMechanism"/>
         <constructor-arg ref="sessionData"/>
         <constructor-arg ref="cacheInvalidationQueue"/>

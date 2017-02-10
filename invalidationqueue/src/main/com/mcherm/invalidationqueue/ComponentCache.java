@@ -46,12 +46,16 @@ public interface ComponentCache<CIE extends CacheInvalidationEvent> {
 
     /**
      * Store an entry in the cache.
+     * <p>
+     * The type of the value stored should exactly match whatever type was declared in the
+     * <code>componentCacheEntries.json</code> file.
      *
      * @param name the name identifying the entry. Must be one of the entry names that was
      *     configured in the componentCacheEntries.json file.
-     * @param value the value to be stored. // FIXME: Someday, add support for anything Jackson can serialize; for now just strings
+     * @param value the value to be stored. This must be of the type that was configured in
+     *     the componentCacheEntries.json file.
      */
-    public void storeEntry(String name, String value);
+    public void storeEntry(String name, Object value);
 
     /**
      * Empty a value out of the cache. Equivalent to <code>storeEntry(name, null)</code>.
@@ -67,13 +71,16 @@ public interface ComponentCache<CIE extends CacheInvalidationEvent> {
      * to be lossy. If the data was lost (or was never set), and a refresh function was
      * configured, then that will be used to obtain the value. But if the data was lost (or
      * never set) and there is no refresh function, then this will return null.
+     * <p>
+     * The actual type returned from this method will be whatever type was declared in the
+     * <code>componentCacheEntries.json</code> file.
      *
      * @param name the name identifying the entry. Must be one of the entry names that was
      *     configured in the componentCacheEntries.json file.
      * @return either the value of that entry (which could be null if it was never set), or
      *   null (if the value got lost and there is no refresh function configured).
      */
-    public String getEntry(String name);
+    public <T> T getEntry(String name);
 
 }
 
