@@ -36,6 +36,14 @@ import java.util.Set;
 // FIXME: Also consider encrypting the cookie so it can't be modified.
 // FIXME:
 
+
+// FIXME: Future Design Idea:
+// FIXME:
+// FIXME: Create an interceptor that sets up the session (and saves it afterward) to be used to
+// FIXME: transition an existing system using sessions.
+// FIXME:
+
+
 /**
  * This class implements a queue of cache invalidation events that occurred during the lifetime of
  * a user's session. In order to allow instances of the class to be easily injected into all of
