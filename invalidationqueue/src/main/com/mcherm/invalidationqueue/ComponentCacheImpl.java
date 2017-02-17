@@ -127,6 +127,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
 
     private final ObjectMapper objectMapper;
     private final StorageMechanism storageMechanism;
+    private final String componentName;
     private final SD sessionData;
     private final CacheInvalidationQueue<CIE> cacheInvalidationQueue;
     private final Map<String,EntryMetadata<CIE>> entryMetadataMap;
@@ -136,7 +137,9 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
      * Constructor. It is passed all of the initialization information required to properly set up the
      * component cache.
      *
+     * @param objectMapper a Jackson object mapper to use
      * @param storageMechanism the actual implementation of a key-value store
+     * @param componentName the name for this component. Must contain only [a-zA-Z0-9].
      * @param sessionData the object that provides access to the (minimal) data that IS part of the
      *                    session. (Stored somehow, perhaps a cookie.)
      * @param entriesConfiguration an InputStream that will read the file containing the configuration
@@ -149,6 +152,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
     public ComponentCacheImpl(
             ObjectMapper objectMapper,
             StorageMechanism storageMechanism,
+            String componentName,
             SD sessionData,
             CacheInvalidationQueue<CIE> cacheInvalidationQueue,
             InputStream entriesConfiguration,
@@ -156,6 +160,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
             Class<CIE> enumClass) {
         this.objectMapper = objectMapper;
         this.storageMechanism = storageMechanism;
+        this.componentName = componentName;
         this.sessionData = sessionData;
         this.cacheInvalidationQueue = cacheInvalidationQueue;
 
@@ -265,7 +270,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         if (!entryMetadataMap.keySet().contains(name)) {
             throw new RuntimeException("The ComponentCache is not configured to support storing the field '" + name + "'.");
         }
-        return sessionData.getSessionId() + ":" + name;
+        return sessionData.getSessionId() + ":" + componentName + ":" + name;
     }
 
 

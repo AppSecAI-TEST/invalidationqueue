@@ -94,7 +94,7 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
         final byte[] bytes = encodedEvents.get().toString().getBytes(Charset.forName("US-ASCII"));
         if (placeInQueue < bytes.length) {
             for (int i = placeInQueue; i < bytes.length; i++) {
-                result.add(eventFromChar(bytes[i], cieClass));
+                result.add(eventFromChar(bytes[i]));
             }
         }
         return result;
@@ -108,7 +108,7 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
     }
 
 
-    protected CIE eventFromChar(byte c, Class<CIE> cieClassXXX) {
+    protected CIE eventFromChar(byte c) {
         CIE[] enumConstants = cieClass.getEnumConstants();
         for (CIE cie : enumConstants) {
             if (c == FIRST_ASCII_VALUE_TO_USE + cie.ordinal()) {

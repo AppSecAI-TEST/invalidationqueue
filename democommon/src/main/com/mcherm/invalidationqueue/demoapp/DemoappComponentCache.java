@@ -29,12 +29,14 @@ public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvali
     public DemoappComponentCache(
             ObjectMapper objectMapper,
             DemoappStorageMechanism storageMechanism,
+            String componentName,
             DemoappCacheInvalidationQueue cacheInvalidationQueue,
             SessionData sessionData,
             String entriesFileName) {
         super(
                 objectMapper,
                 storageMechanism,
+                componentName,
                 sessionData,
                 cacheInvalidationQueue,
                 DemoappComponentCache.class.getClassLoader().getResourceAsStream("/webapp/WEB-INF/" + entriesFileName),

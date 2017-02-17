@@ -27,6 +27,7 @@
     <bean name="componentCache" class="com.mcherm.invalidationqueue.demoapp.DemoappComponentCache">
         <constructor-arg ref="objectMapper"/>
         <constructor-arg ref="storageMechanism"/>
+        <constructor-arg value="accounts"/>
         <constructor-arg ref="sessionData"/>
         <constructor-arg ref="cacheInvalidationQueue"/>
         <constructor-arg type="java.lang.String" value="componentCacheEntries.json"/>
