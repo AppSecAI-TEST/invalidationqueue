@@ -67,7 +67,23 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         private final Set<CIE2> invalidators;
         private final Callable<String> refreshFunction;
 
-        /** Constructor. */
+        /**
+         * Constructor.
+         *
+         * @param name the name of the field, which will be passed to the <code>storeEntry()</code>,
+         *             <code>getEntry()</code>, and <code>clearEntry()</code> methods on the cache.
+         * @param type the type of the object that will be stored in this field. Must be either
+         *             <code>java.lang.String</code> or anything which can be serialized using the
+         *             Jackson library.
+         * @param invalidators a set of events which, if they occur, will invalidate any cached
+         *                     value, so after such an event the cache will effectively be cleared.
+         * @param refreshFunction a function which can be called to load in a new value for this
+         *                        entry if no value is currently available, or null if there is
+         *                        no such function. For fields where this is null, the <code>getEntry()</code>
+         *                        method can sometimes return null even if a value had previously
+         *                        been cached, due to invalidation or due to the cache being
+         *                        unreliable.
+         */
         public EntryMetadata(String name, Class type, Set<CIE2> invalidators, Callable<String> refreshFunction) {
             this.name = name;
             this.type = type;
@@ -82,7 +98,11 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
             return name;
         }
 
-        // FIXME: Do for real and doc it if it works
+        /**
+         * Returns the type of data that will be stored in the field. This will be be either
+         * <code>java.lang.String</code> or anything which can be serialized using the
+         * Jackson library.
+         */
         public Class getType() {
             return type;
         }
