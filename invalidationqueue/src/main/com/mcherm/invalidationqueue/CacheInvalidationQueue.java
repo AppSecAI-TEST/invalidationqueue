@@ -29,8 +29,6 @@ import java.util.TreeMap;
 
 // FIXME: Also consider encrypting the cookie so it can't be modified.
 
-// FIXME: Subtle bug: a component gets its own events on the subsequent call. Probably not what we wanted, right?
-
 // FIXME: Future Design Idea:
 // FIXME:
 // FIXME: Create an interceptor that sets up the session (and saves it afterward) to be used to
@@ -220,8 +218,7 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
     }
 
     /**
-     * Returns a Set of all events that have occurred since this component was last invoked
-     * and advances the current position for that component to the end of the event list.
+     * Returns a Set of all events that have occurred since this component was last invoked.
      * In rare cases where there have been more than 2*EVENTS_PER_BLOCK events since the last
      * time this component was invoked, this will return a set of ALL possible events instead.
      *
@@ -259,6 +256,21 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
             data.positionByComponent.put(componentName, currentQueueLength);
         }
         return result;
+    }
+
+
+    /**
+     * This is called to update the position of the given component to the current end of the
+     * event queue.
+     *
+     * @param componentName the name of the component for which the position should be updated
+     */
+    public void markAllEventsConsumed(String componentName) {
+        final InstanceData data = instanceData.get();
+        final int eventsDiscarded = data.numBlocksDiscarded * EVENTS_PER_BLOCK;
+        final int eventsInNextMostRecentBlock = data.nextMostRecentEvents == null ? 0 : EVENTS_PER_BLOCK;
+        final int currentQueueLength = eventsDiscarded + eventsInNextMostRecentBlock + data.mostRecentEvents.length();
+        data.positionByComponent.put(componentName, currentQueueLength);
     }
 
 

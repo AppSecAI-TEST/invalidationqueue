@@ -382,6 +382,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
 
     @Override
     public void endRequest(HttpServletResponse httpServletResponse) {
+        cacheInvalidationQueue.markAllEventsConsumed(componentName);
     }
 
 }
