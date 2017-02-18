@@ -52,8 +52,6 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
     private final String EVENTS_JSON_FIELD_NAME = "invalidatingEvents";
     private final String REFRESH_FUNCTION_JSON_FIELD_NAME = "refreshFunction";
 
-    private static final String PLACE_IN_QUEUE_ENTRY_NAME = "invalidationqueuePosition";
-
 
     /**
      * An immutable data object containing the metadata about a single entry in the component
@@ -362,19 +360,9 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
      * initialized.
      */
     private void applyNewEventsFromQueue() {
-        // -- Find where we are in the queue --
-        final String placeInQueueString = getEntry(PLACE_IN_QUEUE_ENTRY_NAME);
-        final Integer placeInQueue;
-        if (placeInQueueString == null) {
-            placeInQueue = 0; // No record, so assume we're at the start of the queue
-        } else {
-            placeInQueue = Integer.parseInt(placeInQueueString);
-        }
-
-        // -- See if there is anything new --
-        if (cacheInvalidationQueue.eventCount() > placeInQueue) {
-            // -- Get events --
-            Set<CIE> newEvents = cacheInvalidationQueue.getNewerEvents(placeInQueue);
+        Set<CIE> newEvents = cacheInvalidationQueue.getNewEvents(componentName);
+        // -- Only if there is something new to do... --
+        if (newEvents.size() > 0) {
             for (EntryMetadata<CIE> entryMetadata : entryMetadataMap.values()) {
                 // -- Clear affected entries --
                 Set<CIE> eventsThatWouldInvalidateThisEntry = new HashSet<>(entryMetadata.getInvalidators()); // copy it as we will modify
@@ -384,8 +372,6 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
                     clearEntry(entryMetadata.getName());
                 }
             }
-            // -- Update place in queue --
-            storeEntry(PLACE_IN_QUEUE_ENTRY_NAME, Integer.toString(cacheInvalidationQueue.eventCount()));
         }
     }
 
