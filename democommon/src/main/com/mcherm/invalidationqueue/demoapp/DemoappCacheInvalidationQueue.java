@@ -24,6 +24,6 @@ import com.mcherm.invalidationqueue.CacheInvalidationQueue;
 public class DemoappCacheInvalidationQueue extends CacheInvalidationQueue<DemoappCacheInvalidationEvent> {
     /** Constructor. */
     public DemoappCacheInvalidationQueue() {
-        super(DemoappCacheInvalidationEvent.class);
+        super(DemoappCacheInvalidationEvent.class, null);
     }
 }

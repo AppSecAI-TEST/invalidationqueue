@@ -15,6 +15,8 @@ limitations under the License.
 */
 package com.mcherm.invalidationqueue;
 
+import com.mcherm.invalidationqueue.util.SecureSerializer;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,8 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-
-// FIXME: Also consider encrypting the cookie so it can't be modified.
 
 // FIXME: Future Design Idea:
 // FIXME:
@@ -49,6 +49,8 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
     private static final int LARGEST_ASCII_VALUE_TO_USE = 126;
     private static final int MAX_NUMBER_OF_EVENTS = LARGEST_ASCII_VALUE_TO_USE - FIRST_ASCII_VALUE_TO_USE;
     private static final int EVENTS_PER_BLOCK = 256;
+
+    private static final SecureSerializer secureSerializer = new SecureSerializer();
 
 
     /**
@@ -167,6 +169,7 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
     }
 
     private final Class<CIE> cieClass;
+    private final String secretPassword;
     private final ThreadLocal<InstanceData> instanceData = new ThreadLocal<>();
 
 
@@ -175,9 +178,12 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
      *
      * @param cieClass the Class object for the actual CIE class; needed because of how type parameters
      *           work in Java (erasure).
+     * @param secretPassword the password to use for encrypting and decrypting the cookie, OR null
+     *           to indicate that the cookie does not need to be encrypted.
      */
-    public CacheInvalidationQueue(Class<CIE> cieClass) {
+    public CacheInvalidationQueue(Class<CIE> cieClass, String secretPassword) {
         this.cieClass = cieClass;
+        this.secretPassword = secretPassword;
     }
 
 
@@ -315,7 +321,13 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
         } else {
             // --- set instanceData from the cookie ---
             try {
-                newSessionData = InstanceData.parseCookieString(cookieString);
+                String rawCookie; // the version that is decrypted (if necessary)
+                if (secretPassword == null) {
+                    rawCookie = cookieString;
+                } else {
+                    rawCookie = (String) secureSerializer.deserializeFromTamperproofAscii(cookieString, secretPassword);
+                }
+                newSessionData = InstanceData.parseCookieString(rawCookie);
             } catch(InvalidCookieException err) {
                 throw new RuntimeException("Error in cache invalidation queue cookie.");
             }
@@ -327,7 +339,14 @@ public class CacheInvalidationQueue<CIE extends CacheInvalidationEvent> implemen
     public void endRequest(HttpServletResponse httpServletResponse) {
         InstanceData data = instanceData.get();
         if (data.hasBeenModified) {
-            Cookie cookie = new Cookie(cookieName, data.writeCookieString());
+            String rawCookie = data.writeCookieString();
+            String bakedCookie; // the version that may be encrypted
+            if (secretPassword == null) {
+                bakedCookie = rawCookie;
+            } else {
+                bakedCookie = secureSerializer.serializeToTamperproofAscii(rawCookie, secretPassword);
+            }
+            Cookie cookie = new Cookie(cookieName, bakedCookie);
             cookie.setPath("/");
             httpServletResponse.addCookie(cookie);
         }
