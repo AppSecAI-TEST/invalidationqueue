@@ -18,12 +18,19 @@ package com.mcherm.invalidationqueue.demoapp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcherm.invalidationqueue.ComponentCacheImpl;
 import com.mcherm.invalidationqueue.SessionData;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.concurrent.Callable;
 
 
 /**
  * An implementation of ComponentCache for Demoapp.
  */
 public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvalidationEvent, SessionData> {
+
+    @Autowired
+    private BeanFactory beanFactory;
 
     /** Constructor. */
     public DemoappComponentCache(
@@ -42,6 +49,21 @@ public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvali
                 DemoappComponentCache.class.getClassLoader().getResourceAsStream("/webapp/WEB-INF/" + entriesFileName),
                 entriesFileName,
                 DemoappCacheInvalidationEvent.class);
+    }
+
+
+    // FIXME: Consider making so the string can be a bean name OR a type, so long as the type is unique
+    @Override
+    public Callable getRefreshBeanFromName(String refreshFunctionBeanName) {
+        if (beanFactory.containsBean(refreshFunctionBeanName)) {
+            if (beanFactory.isTypeMatch(refreshFunctionBeanName, Callable.class)) {
+                return (Callable) beanFactory.getBean(refreshFunctionBeanName);
+            } else {
+                throw new RuntimeException("Bean '" + refreshFunctionBeanName + "' is not Callable.");
+            }
+        } else {
+            throw new RuntimeException("No bean found with the name '" + refreshFunctionBeanName + "'.");
+        }
     }
 
 }

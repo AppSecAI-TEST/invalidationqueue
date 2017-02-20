@@ -16,6 +16,7 @@ limitations under the License.
 package com.mcherm.invalidationqueue.demoapp;
 
 import com.mcherm.invalidationqueue.StorageMechanism;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +24,7 @@ import java.util.Map;
 /**
  * An implementation of StorageMechanism.
  */
+@Component("storageMechanism")
 public class DemoappStorageMechanism implements StorageMechanism {
     // FIXME: I should probably use something that is ACTUALLY out of memory. Like memcache. Or whatever.
 

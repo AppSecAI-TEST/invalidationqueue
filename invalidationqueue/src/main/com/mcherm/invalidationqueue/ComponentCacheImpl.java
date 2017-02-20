@@ -46,11 +46,11 @@ import java.util.concurrent.Callable;
  * the field name.
  */
 public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends SessionData> implements ComponentCache<CIE>, StatelessSessionBean {
-    private final String ENTRIES_JSON_FIELD_NAME = "entries";
-    private final String NAME_JSON_FIELD_NAME = "name";
-    private final String TYPE_JSON_FIELD_NAME = "type";
-    private final String EVENTS_JSON_FIELD_NAME = "invalidatingEvents";
-    private final String REFRESH_FUNCTION_JSON_FIELD_NAME = "refreshFunction";
+    private final static String ENTRIES_JSON_FIELD_NAME = "entries";
+    private final static String NAME_JSON_FIELD_NAME = "name";
+    private final static String TYPE_JSON_FIELD_NAME = "type";
+    private final static String EVENTS_JSON_FIELD_NAME = "invalidatingEvents";
+    private final static String REFRESH_FUNCTION_JSON_FIELD_NAME = "refreshFunction";
 
 
     /**
@@ -63,7 +63,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         private final String name;
         private final Class type;
         private final Set<CIE2> invalidators;
-        private final Callable<String> refreshFunction;
+        private final String refreshFunctionName;
 
         /**
          * Constructor.
@@ -75,18 +75,17 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
          *             Jackson library.
          * @param invalidators a set of events which, if they occur, will invalidate any cached
          *                     value, so after such an event the cache will effectively be cleared.
-         * @param refreshFunction a function which can be called to load in a new value for this
-         *                        entry if no value is currently available, or null if there is
-         *                        no such function. For fields where this is null, the <code>getEntry()</code>
-         *                        method can sometimes return null even if a value had previously
-         *                        been cached, due to invalidation or due to the cache being
-         *                        unreliable.
+         * @param refreshFunctionName the name used to look up a function which can be called to load
+         *     in a new value for this entry if no value is currently available, or null if there is
+         *     no such function. For fields where this is null, the <code>getEntry()</code>
+         *     method can sometimes return null even if a value had previously
+         *     been cached, due to invalidation or due to the cache being unreliable.
          */
-        public EntryMetadata(String name, Class type, Set<CIE2> invalidators, Callable<String> refreshFunction) {
+        public EntryMetadata(String name, Class type, Set<CIE2> invalidators, String refreshFunctionName) {
             this.name = name;
             this.type = type;
             this.invalidators = Collections.unmodifiableSet(invalidators);
-            this.refreshFunction = refreshFunction;
+            this.refreshFunctionName = refreshFunctionName;
         }
 
         /**
@@ -114,12 +113,23 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         }
 
         /**
-         * If there is a function to call which will retrieve the value of this field on-demand,
-         * then this returns it. If not, then this returns null.
+         * Returns true if the entry has a function to call which will retrieve the value of
+         * the field (used the first time, whenever the cache is cleared, and whenever the
+         * cache fails), or false if it does not have such a function.
          */
-        public Callable<String> getRefreshFunction() {
-            return refreshFunction;
+        public boolean hasRefreshFunction() {
+            return refreshFunctionName != null;
         }
+
+        /**
+         * If there is a function to call which will retrieve the value of this field on demand,
+         * then this returns the string used to look it up (typically Spring bean name). If not,
+         * then this returns null.
+         */
+        public String getRefreshFunctionName() {
+            return refreshFunctionName;
+        }
+
     }
 
 
@@ -140,6 +150,8 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
      * @param componentName the name for this component. Must contain only [a-zA-Z0-9].
      * @param sessionData the object that provides access to the (minimal) data that IS part of the
      *                    session. (Stored somehow, perhaps a cookie.)
+     * @param cacheInvalidationQueue this is the queue that is used to track when items in the cache
+     *           should be invalidated due to changes made by other components
      * @param entriesConfiguration an InputStream that will read the file containing the configuration
      *           for the cache, including the list of what entries can be stored in the cache. This
      *           file may be found on the classpath.
@@ -162,7 +174,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         this.sessionData = sessionData;
         this.cacheInvalidationQueue = cacheInvalidationQueue;
 
-        Collection<EntryMetadata<CIE>> entryMetadatas = readEntryMetadataFromFile(entriesConfiguration, entriesFileName, enumClass);
+        final Collection<EntryMetadata<CIE>> entryMetadatas = readEntryMetadataFromFile(entriesConfiguration, entriesFileName, enumClass);
         this.entryMetadataMap = new HashMap<>();
         for (EntryMetadata<CIE> entryMetadata : entryMetadatas) {
             entryMetadataMap.put(entryMetadata.name, entryMetadata);
@@ -177,13 +189,13 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         if (entriesConfiguration == null) {
             throw new RuntimeException("Could not read open file \"" + entriesFileName + "\".");
         }
-        BufferedReader streamReader;
+        final BufferedReader streamReader;
         try {
             streamReader = new BufferedReader(new InputStreamReader(entriesConfiguration, "UTF-8"));
         } catch (UnsupportedEncodingException err) {
             throw new Error("Required encoding not supported.", err); // JVM promises it can't happen so this is an Error
         }
-        StringBuilder fileContents = new StringBuilder();
+        final StringBuilder fileContents = new StringBuilder();
 
         try {
             String line = streamReader.readLine();
@@ -203,35 +215,35 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
      * This reads the entries file and converts it to a collection of EntryMetadata.
      */
     private Collection<EntryMetadata<CIE>> readEntryMetadataFromFile(InputStream entriesConfiguration, String entriesFileName, Class<CIE> enumClass) {
-        JSONObject entriesJSON = readEntriesFile(entriesConfiguration, entriesFileName);
+        final JSONObject entriesJSON = readEntriesFile(entriesConfiguration, entriesFileName);
         try {
-            List<EntryMetadata<CIE>> result = new ArrayList<>();
-            JSONArray entriesList = entriesJSON.getJSONArray(ENTRIES_JSON_FIELD_NAME);
+            final List<EntryMetadata<CIE>> result = new ArrayList<>();
+            final JSONArray entriesList = entriesJSON.getJSONArray(ENTRIES_JSON_FIELD_NAME);
             for (int i=0; i<entriesList.length(); i++) {
                 // -- read the JSON entry --
-                JSONObject entryJSON = entriesList.getJSONObject(i);
-                String name = entryJSON.getString(NAME_JSON_FIELD_NAME);
-                String typeString = entryJSON.getString(TYPE_JSON_FIELD_NAME);
-                Class type;
+                final JSONObject entryJSON = entriesList.getJSONObject(i);
+                final String name = entryJSON.getString(NAME_JSON_FIELD_NAME);
+                final String typeString = entryJSON.getString(TYPE_JSON_FIELD_NAME);
+                final Class type;
                 try {
                     type = Class.forName(typeString);
                 } catch(ClassNotFoundException err) {
                     throw new JSONException("Class \"" + typeString + "\" was not found.");
                 }
-                JSONArray invalidatingEvents = entryJSON.getJSONArray(EVENTS_JSON_FIELD_NAME);
-                String refreshFunctionBeanName;
-                if (!entriesJSON.has(REFRESH_FUNCTION_JSON_FIELD_NAME) || entriesJSON.isNull(REFRESH_FUNCTION_JSON_FIELD_NAME)) {
-                    refreshFunctionBeanName = null;
+                final JSONArray invalidatingEvents = entryJSON.getJSONArray(EVENTS_JSON_FIELD_NAME);
+                final String refreshFunctionName;
+                if (!entryJSON.has(REFRESH_FUNCTION_JSON_FIELD_NAME) || entryJSON.isNull(REFRESH_FUNCTION_JSON_FIELD_NAME)) {
+                    refreshFunctionName = null;
                 } else {
-                    refreshFunctionBeanName = entryJSON.getString(REFRESH_FUNCTION_JSON_FIELD_NAME);
+                    refreshFunctionName = entryJSON.getString(REFRESH_FUNCTION_JSON_FIELD_NAME);
                 }
 
                 // -- create list of events --
-                Set<CIE> invalidators = new TreeSet<>();
+                final Set<CIE> invalidators = new TreeSet<>();
                 for (int j=0; j<invalidatingEvents.length(); j++) {
-                    String eventName = invalidatingEvents.getString(j);
+                    final String eventName = invalidatingEvents.getString(j);
                     try {
-                        CIE[] enumValues = enumClass.getEnumConstants();
+                        final CIE[] enumValues = enumClass.getEnumConstants();
                         for (CIE enumValue : enumValues) {
                             if (enumValue.toString().equals(eventName)) {
                                 invalidators.add(enumValue);
@@ -244,13 +256,8 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
                     }
                 }
 
-                // -- find the actual function from the bean --
-                // FIXME: Need to handle getting the bean for a refreshFunction. For now it's hard-coded to null
-                Callable<String> refreshFunction = null;
-
                 // -- create metadata object --
-                EntryMetadata<CIE> entryMetadata =
-                        new EntryMetadata<>(name, type, invalidators, refreshFunction);
+                final EntryMetadata<CIE> entryMetadata = new EntryMetadata<>(name, type, invalidators, refreshFunctionName);
                 result.add(entryMetadata);
             }
             return result;
@@ -259,6 +266,21 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         }
     }
 
+    // FIXME: Consider a variant of the library that DOES depend on Spring.
+
+    /**
+     * This is intended to be overridden by subclasses that want to support refresh functions.
+     * The method will be passed the name specified in the config file, and should return the
+     * actual Callable object that retrieves the value. For instance, the subclass could do a
+     * Spring lookup of the name to find the appropriate bean. If there is a problem retrieving
+     * the value it should throw an Exception, or return null instead of the actual Callable.
+     *
+     * @param refreshFunctionBeanName the string specified in the config file
+     * @return the actual Callable which should be used to refresh the cache
+     */
+    protected Callable getRefreshBeanFromName(String refreshFunctionBeanName) throws Exception {
+        return null;
+    }
 
 
     /**
@@ -275,7 +297,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
     @Override
     public void storeEntry(String name, Object value) {
         // --- Check that name and value are valid ---
-        EntryMetadata<CIE> entryMetadata = entryMetadataMap.get(name);
+        final EntryMetadata<CIE> entryMetadata = entryMetadataMap.get(name);
         if (entryMetadata == null) {
             throw new IllegalArgumentException("The ComponentCache is not configured to support storing the field '" + name + "'.");
         }
@@ -286,7 +308,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         }
 
         // --- Store it as either String or Jackson-serialized object ---
-        String stringToStore;
+        final String stringToStore;
         if (value instanceof CharSequence) {
             stringToStore = value.toString();
         } else {
@@ -306,44 +328,59 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
     }
 
 
-    /**
-     * Returns the underlying String for an entry, or null if none is available.
-     */
-    private String getEntryString(String name) {
-        String result = storageMechanism.get(storageKeyFromName(name));
-        if (result != null) {
-            return result;
-        }
-        // It was null, but we might be able to refresh the value now
-        Callable<String> refreshFunction = entryMetadataMap.get(name).refreshFunction;
-        if (refreshFunction == null) {
-            // We don't have a way to refresh this field, so we'll just return null
-            return null;
-        }
-        else {
-            String newValue;
-            try {
-                newValue = refreshFunction.call();
-            } catch(Exception err) {
-                // FIXME: Should probably LOG the error.
-                // Refreshing didn't work, so we'll have to return null
-                return null;
-            }
-            // Store this new value, then return it
-            storeEntry(name, newValue);
-            return newValue;
-        }
-    }
-
 
     @Override
     public <T> T getEntry(String name) {
-        String valueStr = getEntryString(name);
+        final String valueStr = storageMechanism.get(storageKeyFromName(name));
+        final EntryMetadata<CIE> entryMetadata = entryMetadataMap.get(name);
         if (valueStr == null) {
-            return null;
-        } else {
+            // The storage didn't have it, but we might be able to refresh the value now
+            if (! entryMetadata.hasRefreshFunction()) {
+                // We don't have a way to refresh this field, so we'll just return null
+                return null;
+            }
+
+            // -- find the actual function from the bean --
+            final String refreshFunctionName = entryMetadata.getRefreshFunctionName();
+            final Callable refreshFunction;
             try {
-                Class<T> clazz = entryMetadataMap.get(name).getType();
+                refreshFunction = getRefreshBeanFromName(refreshFunctionName);
+            } catch(Throwable err) {
+                throw new RefreshFunctionNotFoundException(refreshFunctionName, err);
+            }
+            if (refreshFunction == null) {
+                throw new RefreshFunctionNotFoundException(refreshFunctionName, new NullPointerException());
+            }
+
+            // -- invoke the refresh function --
+            final Object theValue;
+            try {
+                theValue = refreshFunction.call();
+            } catch (Exception err) {
+                // Exception trying to fetch the value; log it and return null
+                throw new RefreshErrorException(err);
+            }
+
+            // -- Make sure it is the right type --
+            if (! entryMetadata.getType().isAssignableFrom(theValue.getClass())) {
+                throw new RefreshReturnedWrongTypeException(
+                        refreshFunctionName, entryMetadata.getType(), theValue.getClass());
+            }
+
+            // Store in cache for next time
+            try {
+                storeEntry(name, theValue);
+            } catch (RuntimeException err) {
+                throw new RefreshCouldNotBeCachedException(name, theValue);
+            }
+
+            // Return the value
+            return (T) theValue;
+
+        } else {
+            // Storage did have it, but we may need to convert to an object
+            try {
+                final Class<T> clazz = entryMetadata.getType();
                 return objectMapper.readValue(valueStr, clazz);
             } catch (ClassCastException err) {
                 throw new ClassCastException("Class cast while reading field " + name + ". " + err.getMessage());
@@ -365,7 +402,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
         if (newEvents.size() > 0) {
             for (EntryMetadata<CIE> entryMetadata : entryMetadataMap.values()) {
                 // -- Clear affected entries --
-                Set<CIE> eventsThatWouldInvalidateThisEntry = new HashSet<>(entryMetadata.getInvalidators()); // copy it as we will modify
+                final Set<CIE> eventsThatWouldInvalidateThisEntry = new HashSet<>(entryMetadata.getInvalidators()); // copy it as we will modify
                 eventsThatWouldInvalidateThisEntry.retainAll(newEvents);
                 if (! eventsThatWouldInvalidateThisEntry.isEmpty()) {
                     // -- go ahead and invalidate this one --

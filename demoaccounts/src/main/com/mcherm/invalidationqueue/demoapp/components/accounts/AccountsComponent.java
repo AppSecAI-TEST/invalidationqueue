@@ -42,13 +42,6 @@ public class AccountsComponent {
 
     @RequestMapping(value = "v1/accounts", method = RequestMethod.GET)
     public @ResponseBody AccountList getAccounts2() throws  Throwable {
-        AccountList cachedResult = componentCache.getEntry("accountList");
-        if (cachedResult == null) {
-            AccountList result = new AccountList(accountsBackEndService.getAccounts());
-            componentCache.storeEntry("accountList", result);
-            return result;
-        } else {
-            return cachedResult;
-        }
+        return componentCache.getEntry("accountList");
     }
 }
