@@ -3,10 +3,10 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.mcherm.invalidationqueue</groupId>
     <version>1.0-SNAPSHOT</version>
-    <artifactId>demoapp-common</artifactId>
+    <artifactId>invalidationqueuespring</artifactId>
     <packaging>jar</packaging>
-    <name>invalidation queue demo app common libraries</name>
-    <description>A proof-of-concept to demonstrate the invalidation queue.</description>
+    <name>invalidation queue library with Spring</name>
+    <description>A proof-of-concept to demonstrate the invalidation queue concept works.</description>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -16,8 +16,13 @@
     <dependencies>
         <dependency>
             <groupId>com.mcherm.invalidationqueue</groupId>
-            <artifactId>invalidationqueuespring</artifactId>
+            <artifactId>invalidationqueue</artifactId>
             <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>4.3.5.RELEASE</version>
         </dependency>
     </dependencies>
 

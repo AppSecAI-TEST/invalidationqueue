@@ -45,7 +45,7 @@ import java.util.concurrent.Callable;
  * the underlying key-value storage. Storage keys will be the session id, a colon (":"), and then
  * the field name.
  */
-public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends SessionData> implements ComponentCache<CIE>, StatelessSessionBean {
+public class ComponentCacheImpl<CIE extends CacheInvalidationEvent> implements ComponentCache<CIE>, StatelessSessionBean {
     private final static String ENTRIES_JSON_FIELD_NAME = "entries";
     private final static String NAME_JSON_FIELD_NAME = "name";
     private final static String TYPE_JSON_FIELD_NAME = "type";
@@ -136,7 +136,7 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
     private final ObjectMapper objectMapper;
     private final StorageMechanism storageMechanism;
     private final String componentName;
-    private final SD sessionData;
+    private final SessionData sessionData;
     private final CacheInvalidationQueue<CIE> cacheInvalidationQueue;
     private final Map<String,EntryMetadata<CIE>> entryMetadataMap;
 
@@ -157,24 +157,24 @@ public class ComponentCacheImpl<CIE extends CacheInvalidationEvent, SD extends S
      *           file may be found on the classpath.
      * @param entriesFileName the filename of the file that entriesConfiguration was loaded from. Used
      *           for error reporting.
-     * @param enumClass the actual class for the enum
+     * @param cieClass the actual class for the enum
      */
     public ComponentCacheImpl(
             ObjectMapper objectMapper,
             StorageMechanism storageMechanism,
-            String componentName,
-            SD sessionData,
+            SessionData sessionData,
             CacheInvalidationQueue<CIE> cacheInvalidationQueue,
-            InputStream entriesConfiguration,
+            Class<CIE> cieClass,
+            String componentName,
             String entriesFileName,
-            Class<CIE> enumClass) {
+            InputStream entriesConfiguration) {
         this.objectMapper = objectMapper;
         this.storageMechanism = storageMechanism;
         this.componentName = componentName;
         this.sessionData = sessionData;
         this.cacheInvalidationQueue = cacheInvalidationQueue;
 
-        final Collection<EntryMetadata<CIE>> entryMetadatas = readEntryMetadataFromFile(entriesConfiguration, entriesFileName, enumClass);
+        final Collection<EntryMetadata<CIE>> entryMetadatas = readEntryMetadataFromFile(entriesConfiguration, entriesFileName, cieClass);
         this.entryMetadataMap = new HashMap<>();
         for (EntryMetadata<CIE> entryMetadata : entryMetadatas) {
             entryMetadataMap.put(entryMetadata.name, entryMetadata);

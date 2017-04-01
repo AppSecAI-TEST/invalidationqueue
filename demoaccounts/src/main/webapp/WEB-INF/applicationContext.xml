@@ -15,22 +15,23 @@
 
     <mvc:annotation-driven />
 
-    <bean name="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper"/>
-
-    <!--<bean name="sessionData" class="com.mcherm.invalidationqueue.demoapp.DemoappComplexSessionData"/>-->
-    <bean name="sessionData" class="com.mcherm.invalidationqueue.SimpleSessionData"/>
-
     <bean name="cacheInvalidationQueue" class="com.mcherm.invalidationqueue.demoapp.DemoappCacheInvalidationQueue"/>
 
-    <bean name="componentCache" class="com.mcherm.invalidationqueue.demoapp.DemoappComponentCache">
+    <bean name="componentName" class="java.lang.String">
+        <constructor-arg value="abcd"/>
+    </bean>
+
+    <bean name="cacheInvalidationEventClass" class="java.lang.Class"></bean>
+
+    <bean name="componentCache1" class="com.mcherm.invalidationqueue.demoapp.DemoappComponentCache">
         <constructor-arg ref="objectMapper"/>
         <constructor-arg ref="storageMechanism"/>
         <constructor-arg value="accounts"/>
-        <constructor-arg ref="sessionData"/>
+        <constructor-arg ref="springSessionData"/>
         <constructor-arg ref="cacheInvalidationQueue"/>
         <constructor-arg type="java.lang.String" value="componentCacheEntries.json"/>
     </bean>
 
-    <bean name="servletFilterInitializer" class="com.mcherm.invalidationqueue.demoapp.DemoappServletFilterInitializer"/>
+    <bean name="servletFilterInitializer" class="com.mcherm.invalidationqueue.AutowiredServletFilterInitializer"/>
 
 </beans>

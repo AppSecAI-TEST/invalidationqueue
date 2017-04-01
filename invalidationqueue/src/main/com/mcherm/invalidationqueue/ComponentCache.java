@@ -40,8 +40,11 @@ package com.mcherm.invalidationqueue;
  * This class is parameterized by some specific subclass of CacheInvalidationEvent
  * because each application that uses the invalidationqueue framework will have its
  * own list of invalidation events.
+ * <p>
+ * Any implementation of ComponentCache will need to be initialized as a StatelessSessionBean
+ * so this interface will be declared to extend <code>StatelessSessionBean</code>.
  */
-public interface ComponentCache<CIE extends CacheInvalidationEvent> {
+public interface ComponentCache<CIE extends CacheInvalidationEvent> extends StatelessSessionBean {
 
 
     /**

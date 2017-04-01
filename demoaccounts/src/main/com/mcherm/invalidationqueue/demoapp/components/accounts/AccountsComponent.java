@@ -16,6 +16,8 @@ limitations under the License.
 package com.mcherm.invalidationqueue.demoapp.components.accounts;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mcherm.invalidationqueue.PrefilledThingamig;
+import com.mcherm.invalidationqueue.SpringComponentCache;
 import com.mcherm.invalidationqueue.demoapp.DemoappComponentCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -33,15 +35,23 @@ public class AccountsComponent {
     @Autowired
     AccountsBackEndService accountsBackEndService;
 
+    // FIXME: Two of these because I'm still experimenting.
     @Autowired
-    DemoappComponentCache componentCache;
+    DemoappComponentCache componentCache1;
+
+    @Autowired
+    SpringComponentCache componentCache2;
 
     @Autowired
     ObjectMapper objectMapper;
 
+    // FIXME: The following is only needed for some experimentation, and should be deleted afterwared
+    @Autowired
+    PrefilledThingamig prefilledThingamig;
+
 
     @RequestMapping(value = "v1/accounts", method = RequestMethod.GET)
     public @ResponseBody AccountList getAccounts2() throws  Throwable {
-        return componentCache.getEntry("accountList");
+        return componentCache1.getEntry("accountList");
     }
 }

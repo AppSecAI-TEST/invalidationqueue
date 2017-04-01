@@ -13,45 +13,45 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package com.mcherm.invalidationqueue.demoapp;
+package com.mcherm.invalidationqueue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mcherm.invalidationqueue.ComponentCacheImpl;
-import com.mcherm.invalidationqueue.SessionData;
-import com.mcherm.invalidationqueue.SpringComponentCache;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.Callable;
 
 
-// FIXME: I want this to go away
 /**
- * An implementation of ComponentCache for Demoapp.
+ * // FIXME: Document this
  */
-public class DemoappComponentCache extends ComponentCacheImpl<DemoappCacheInvalidationEvent> {
+@Component
+public class SpringComponentCache<CIE extends CacheInvalidationEvent> extends ComponentCacheImpl<CIE> {
+    private final static String ENTRIES_FILE_NAME = "componentCacheEntries.json";
+    private final static String ENTRIES_LOCATION = "/webapp/WEB-INF/";
+
 
     @Autowired
     private BeanFactory beanFactory;
 
     /** Constructor. */
-    public DemoappComponentCache(
+    public SpringComponentCache(
             ObjectMapper objectMapper,
-            DemoappStorageMechanism storageMechanism,
-            String componentName,
-            DemoappCacheInvalidationQueue cacheInvalidationQueue,
+            StorageMechanism storageMechanism,
             SessionData sessionData,
-            String entriesFileName) {
+            CacheInvalidationQueue<CIE> cacheInvalidationQueue,
+            Class<CIE> cacheInvalidationEventClass,
+            String componentName) {
         super(
                 objectMapper,
                 storageMechanism,
                 sessionData,
                 cacheInvalidationQueue,
-                DemoappCacheInvalidationEvent.class,
+                cieClass,
                 componentName,
-                entriesFileName,
-                // FIXME: Next line is a test to see if this will get a working classloader.
-                SpringComponentCache.class.getClassLoader().getResourceAsStream("/webapp/WEB-INF/" + entriesFileName));
+                ENTRIES_FILE_NAME,
+                SpringComponentCache.class.getClassLoader().getResourceAsStream(ENTRIES_LOCATION + ENTRIES_FILE_NAME));
     }
 
 

@@ -13,11 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package com.mcherm.invalidationqueue.demoapp;
+package com.mcherm.invalidationqueue;
 
-import com.mcherm.invalidationqueue.SessionData;
-import com.mcherm.invalidationqueue.StatelessSessionBean;
-import com.mcherm.invalidationqueue.ServletFilterInitializer;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -25,17 +22,18 @@ import java.util.List;
 
 
 /**
- * An instance of <code>ServletFilterInitializer</code> for the Demoapp project.
+ * FIXME: Document this
  */
-public class DemoappServletFilterInitializer extends ServletFilterInitializer {
+public class AutowiredServletFilterInitializer extends ServletFilterInitializer {
+
     @Autowired
     SessionData sessionData;
 
     @Autowired
-    DemoappCacheInvalidationQueue cacheInvalidationQueue;
+    CacheInvalidationQueue cacheInvalidationQueue;
 
     @Autowired
-    DemoappComponentCache componentCache;
+    ComponentCache componentCache;
 
     @Override
     public List<StatelessSessionBean> getStatelessSessionBeans() {
